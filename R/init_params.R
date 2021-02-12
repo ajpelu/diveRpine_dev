@@ -20,3 +20,10 @@ empty_landscape <- raster(m)
 extent(empty_landscape) <- matrix(c(0, 0, ancho, alto), nrow=2)
 empty_landscape[] <- 0
 ## -------------------------------------------------
+
+
+## -------------------------------------------------
+### Position for target_plantation
+position_pine <- matrix(c(nrow(empty_landscape) / 2,
+                          ncol(empty_landscape) / 2),
+                        ncol = 2, nrow = 1)

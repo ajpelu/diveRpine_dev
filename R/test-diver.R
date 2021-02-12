@@ -8,6 +8,7 @@ reactlog_enable()
 
 ############################ FUNCTIONS
 source("init_params.R")
+
 source("aux.R")
 source("diveR_landscape.R")
 source("plot_landscape_pine.R")
@@ -77,12 +78,7 @@ server <- function(input, output, session) {
 
 
   ### Pine target submodule -----------------------
-  #### Set the positions
 
-  position_pine <- reactive({
-    matrix(c(nrow(empty_landscape) / 2,
-             ncol(empty_landscape) / 2),
-           ncol = 2, nrow = 1)})
 
   pine_size <- reactive(input$pp_size)
 
@@ -90,8 +86,7 @@ server <- function(input, output, session) {
     landscapeR::makePatch(empty_landscape,
                           val = 1, rast = TRUE, bgr = 0,
                           size = pine_size(),
-                          spt = position_pine()
-    )
+                          spt = position_pine)
   })
 
 
