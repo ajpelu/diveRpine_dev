@@ -20,8 +20,9 @@ ui <- dashboardPage(
   dashboardSidebar(disable = TRUE),
   dashboardBody(
     fluidRow(
-      box(title = "Target pine plantation",
-          sliderInput(
+      column(4,
+             box(title = "Target pine plantation",
+                 sliderInput(
             inputId = "pp_size", label = "Patch Area",
             min = 200, max = 1500, value = 750
           ),
@@ -44,11 +45,13 @@ ui <- dashboardPage(
           sliderInput(
             inputId = "nf_size", label = "Natural forests patch size (min and max)",
             min = 50, max = 500, value = c(100,200))
-          # actionButton("addNatForest", "Add Natural forests")
-      ),
-      box(actionButton("createLandscape", "Create Landscape")),
-      box(plotOutput('initial_pine')),
+
+      )),
+      column(6,
+
+      box(plotOutput('initial_landscape'))
     )
+  )
   )
 )
 
@@ -69,26 +72,13 @@ server <- function(input, output, session) {
     )
   })
 
-  # pine <- reactive({
-  #   create_pine(empty_landscape,
-  #               pine_size = input$pp_size)})
-
-  # pine_size <- reactive({input$pp_size})
-
-
-
   ### Pine target submodule -----------------------
-
-
-  pine_size <- reactive(input$pp_size)
-
   pine <- reactive({
     landscapeR::makePatch(empty_landscape,
                           val = 1, rast = TRUE, bgr = 0,
-                          size = pine_size(),
+                          size = input$pp_size,
                           spt = position_pine)
   })
-
 
 
   ### Natural forests submodule -----------------------
@@ -104,7 +94,7 @@ server <- function(input, output, session) {
       )
   })
 
-
+  #### Generate the sizes of the natural forests patch
   nf_sizes <- reactive({
     round(runif(nf_n(),
             input$nf_size[1],
@@ -112,28 +102,30 @@ server <- function(input, output, session) {
       digits = 2)
   })
 
-  landscape <- reactive({
-    l <- makeClass(isolate(pine()),
+  #### Generate pine + oak landscape
+  pine_oak <- reactive({
+    makeClass(pine(),
               val = 2, rast = TRUE,
               npatch = nf_n(),
               pts = positions_nf(),
               size = nf_sizes()
-              )
+    )
+  })
 
-    ncrops <- sample(3:5, size=1)
-
-    l <- makeClass(l,
-                   val = 3, rast = TRUE,
-                   npatch = ncrops,
-                   size = sample(
-                     10:ceiling(
-                       length(which(t(raster::as.matrix(pp)) == 0))*0.05),
-                     size = ncrops)
-                     )
-    return(l)
+  crops_size <- reactive({
+    sample(10:ceiling(
+      length(which(t(raster::as.matrix(pine_oak())) == 0))*0.05),
+                        size = n_crops)
     })
 
-  output$initial_pine <- renderPlot({
+  landscape <- reactive({
+    makeClass(pine_oak(),
+                   val = 3, rast = TRUE,
+                   npatch = n_crops,
+                   size = crops_size())
+    })
+
+  output$initial_landscape <- renderPlot({
 
     plot_landscape_pine(landscape()) +
       scale_fill_manual(
