@@ -105,16 +105,19 @@ server <- function(input, output, session) {
   })
 
 
+  nf_sizes <- reactive({
+    round(runif(nf_n(),
+            input$nf_size[1],
+            input$nf_size[2]),
+      digits = 2)
+  })
+
   landscape <- reactive({
     l <- makeClass(isolate(pine()),
               val = 2, rast = TRUE,
               npatch = nf_n(),
               pts = positions_nf(),
-              size = round(
-                runif(nf_n(),
-                      input$nf_size[1],
-                      input$nf_size[2]),
-                digits = 2)
+              size = nf_sizes()
               )
 
     ncrops <- sample(3:5, size=1)
