@@ -1,3 +1,6 @@
+# Auxiliar R
+
+
 #' create_pine
 #'
 #' Create a pine plantation stand
@@ -30,10 +33,19 @@ create_pine <- function(x,
                                   size = pine_size,
                                   spt = matrix(
                                     c(nrow(x) / 2, ncol(x) / 2),
-                                    ncol = 1
+                                    nrow = 1
                                   ),
                                   edge = TRUE
   )
 
   return(p_pine)
 }
+
+
+
+
+
+
+
+
+

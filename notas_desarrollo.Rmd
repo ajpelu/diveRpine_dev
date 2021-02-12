@@ -1,0 +1,45 @@
+---
+title: "Desarrollo"
+output: html_document
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(echo = TRUE)
+```
+
+
+
+# Organización
+
+All auxiliary functions are in 
+`aux.R` 
+
+# Creo un landscape 
+Lo primero que hacemos es crear un paisaje vacío, con unas dimensiones `ancho` (*n columnas*) y `alto` (*n filas*)
+
+Se trata de un raster llamado `empty_landscape`
+
+
+# 1. Creo un Paisaje
+
+## 1.1 Paisaje vacío
+Creamos un paisaje vacío (raster) con valores 0 y unas dimensiones específicas determinadas por `ancho` y `alto` (ver `init_params.R`). 
+
+## 1.2 Definir la plantación objetivo.
+
+La función `create_pine()` crea una pine plantation objetivo con un tamaño determinado por el usuario en `patch Area` del shiny. 
+
+
+
+Esta función usa `landscapeR` 
+
+
+
+
+
+
+
+
+
+
+
