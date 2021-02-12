@@ -27,3 +27,7 @@ empty_landscape[] <- 0
 position_pine <- matrix(c(nrow(empty_landscape) / 2,
                           ncol(empty_landscape) / 2),
                         ncol = 2, nrow = 1)
+
+## ------------------------------------------------
+### Potential number of crops patches
+n_crops <- sample(3:8, size = 1)
