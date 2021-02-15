@@ -61,9 +61,9 @@ server <- function(input, output, session) {
   pp_denR <- reactive({
     list(
       den = switch(input$pp_den,
-                   "low" = "low",
-                   "medium" = "medium",
-                   "high" = "high"),
+                   "low" = "100",
+                   "medium" = "1250",
+                   "high" = "3000"),
       # "low" = 100, "medium" = 1250, "high" = 3000),
       col = switch(input$pp_den,
                    "low" = "#a1d99b",
@@ -99,7 +99,7 @@ server <- function(input, output, session) {
     round(runif(nf_n(),
             input$nf_size[1],
             input$nf_size[2]),
-      digits = 2)
+      digits = 0)
   })
 
   #### Generate pine + oak landscape
@@ -124,6 +124,21 @@ server <- function(input, output, session) {
                    npatch = n_crops,
                    size = crops_size())
     })
+
+  ### ----------------------------------------------
+  # Create landscape
+  # landscapeInit <- reactive({
+   # createLandscape(r, size_pp = input$size_pp, size_nf = input$size_nf, n_nf = input$n_nf)
+  # })
+
+  # landscape <- landscapeInit
+
+
+  ### ----------------------------------------------
+  ## Distance raster
+  dist_raster <- reactive({
+    dist2nf(landscape(), nf_value = nf_value) # nf defined at init_params
+  })
 
   output$initial_landscape <- renderPlot({
 

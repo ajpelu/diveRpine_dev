@@ -31,3 +31,19 @@ position_pine <- matrix(c(nrow(empty_landscape) / 2,
 ## ------------------------------------------------
 ### Potential number of crops patches
 n_crops <- sample(3:8, size = 1)
+
+
+
+## -------------------------------------------------
+## Some parameters
+line_pol <- 2 ### Line width polygon
+pp_value <- 1 ### Value for Pine plantation
+nf_value <- 2 ### Value for Natural forest
+
+## -------------------------------------------------
+# Richness range for each land-use (see package references)
+ri_range <- as.data.frame(
+  cbind(value = c(0,1,2,3),
+        lowRich = c(0, 12.82, mean(13.72, 15.62), 1),
+        upRich = c(0, 13.34, mean(16.11, 19.66), 2)))
+
