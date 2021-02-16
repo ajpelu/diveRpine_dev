@@ -2,9 +2,6 @@
 # Load pkgs
 library(raster)
 library(landscapeR)
-library(landscapemetrics)
-library(landscapetools)
-
 
 # Set heigth plots (for dashboard)
 h_plots <- 800
@@ -55,6 +52,7 @@ ri_range <- as.data.frame(
 # Auxiliary functions
 ### auxiliary function
 summaryRaster <- function(x) {
+  require(raster)
   mean <- round(cellStats(x, mean), 2)
   min <- round(cellStats(x, min), 2)
   max <- round(cellStats(x, max), 2)
