@@ -6,6 +6,9 @@ library(landscapemetrics)
 library(landscapetools)
 
 
+# Set heigth plots (for dashboard)
+h_plots <- 800
+
 ## -------------------------------------------------
 ### Create empty landscape
 set.seed(123)
@@ -46,4 +49,17 @@ ri_range <- as.data.frame(
   cbind(value = c(0,1,2,3),
         lowRich = c(0, 12.82, mean(13.72, 15.62), 1),
         upRich = c(0, 13.34, mean(16.11, 19.66), 2)))
+
+
+## ---------------------------------------------------
+# Auxiliary functions
+### auxiliary function
+summaryRaster <- function(x) {
+  mean <- round(cellStats(x, mean), 2)
+  min <- round(cellStats(x, min), 2)
+  max <- round(cellStats(x, max), 2)
+  return(list(mean = mean,
+              min = min,
+              max = max))
+}
 
