@@ -3,6 +3,7 @@
 # Cargo init params
 source("R/init_params.R")
 source("R/dist2nf.R")
+source("R/plot_landscape.R")
 input <- list()
 
 # Select pine size
@@ -63,7 +64,33 @@ landscape <-
             npatch = n_crops,
             size = crops_size)
 
-plot(landscape)
+
+
+# pp_denR()$col <-#a1d99b
+
+
+plot_landscape(landscape) +
+  scale_fill_manual(
+    values =
+      c("0" = "#FFFFe5",
+        "1" = "#a1d99b", # pp_denR()$col
+        "2" = "green",
+        "3" = "lightgoldenrod1"),
+    labels = c("Other", "Pine plantation", "Natural Forests", "Crops"),
+    name = "Present land uses")
+
+
+
+## Compute initial Richnness
+rasterRich <- reactive({
+  initRichness(r = landscapeInit(), draster = dist_raster(),
+               r_range = ri_range, treedensity = den_pp()$den,
+               pastUse = pastUse(), rescale = FALSE)
+})
+
+
+
+
 
 
 # Add factor levels (landscapes types)
@@ -72,3 +99,4 @@ rat_l <- levels(l)[[1]]
 rat_l$landuseValue <- c(0:3)
 rat_l$landuse <- c("Shrublands", "Pine plantation", "Natural Forest", "Crops")
 levels(l) <- rat_l
+
