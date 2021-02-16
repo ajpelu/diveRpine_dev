@@ -1,6 +1,9 @@
 ---
 title: "DiverPine App"
-output: pdf_document
+output:
+  pdf_document: default
+  html_document:
+    df_print: paged
 bibliography: references.bib
 ---
 
@@ -18,6 +21,8 @@ library("equatiomatic")
 library("latex2exp")
 library("tidyverse")
 library("rgbif")
+library("raster")
+library("landscapeR")
 ```
 
 
@@ -27,7 +32,7 @@ The app needs some parameters to start. They are provided with `init parameters.
 ```{r, echo=TRUE}
 source("../R/init_params.R")
 source("../R/dist2nf.R")
-source("../R/initRichnness.R")
+source("../R/initRichness.R")
 ```
 ## Configure Landscape. 
 ### Pine plantation 
@@ -43,7 +48,7 @@ input <- list()
 pp_size <- 1000
 pp_den <- "low" # c("low", "medium", "high")
 pp_den_den <- 100 # pp_denR()$den 
-pp_use <- "Natural Forests" # c("Natural Forests", "Shrublands", "Pasture", "Croplands")
+pp_use <- "Oak" # c("Oak", "Shrublands", "Pasture", "Croplands")
 input$pp_size <- pp_size
 ```
 
@@ -227,9 +232,10 @@ plot(sh)
 
 
 ```{r}
-landscape[landscape == 1] <- -100
+landscape1 <- landscape
+landscape1[landscape1 == 1] <- -100
 
-s <- calc(stack(landscape, sh), fun=function(x)  ifelse(x[1] == -100 , (x[1]/-100)*x[2],  NA))
+s <- calc(stack(landscape1, sh), fun=function(x)ifelse(x[1] == -100 , (x[1]/-100)*x[2],  NA))
 plot(s)
 ```
 
@@ -381,56 +387,61 @@ plot(rasterRich, axes=FALSE)
 
 ```
 
+
 # Get values of Richness for NF and Pine
+We used an custom function to compute the mean, min and max. This functions (`summaryRaster`),located in the `init_params.R` file, take a raster and compute the mean, max and min values of the cells. 
 
-We used an custom function to compute the mean, min and max 
-```{r, eval=FALSE}
+We applied this function compute the Richness values of Natural forests patches and Pine plantation target patch (init and end configuration). 
 
+### Natural Forests 
+```{r}
 rich_nf <- calc(
   stack(landscape, rasterRich), 
   fun=function(x) ifelse(x[1] == nf_value, (x[1]/nf_value)*x[2], NA))
 
-
-
-
-
-
-
-cellStats(rich_nf, mean), 2)
-
-
-summaryRaster <- function(x) {
-  mean <- round(cellStats(x, mean), 2)
-  min <- round(cellStats(x, min), 2)
-  max <- round(cellStats(x, max), 2)
-  return(list(mean = mean,
-              min = min,
-              max = max))
-}
-
-
-summaryRaster(
-      )
-
-
-
-
-
-      valueBox(value = round(cellStats(rich_nf(), mean),2),
-               subtitle =
-                 HTML(paste0(
-                   paste0(round(cellStats(rich_nf(), min),2), " - ",
-                          round(cellStats(rich_nf(), max),2)),
-                   br(), "Natural Forest Richness")),
-               icon = icon('tree-deciduous', lib='glyphicon'), color = 'yellow')
-    })
-
-
-
-
-
-
+plot(rich_nf, axes=FALSE)
 ```
+
+
+```{r}
+dfnf<- drop_na(raster::as.data.frame(rich_nf))
+
+dfnf %>% 
+  ggplot(aes(layer)) + geom_histogram() +
+  theme_minimal() + 
+  ylab("n pixels") + xlab("Richness Value") + 
+  geom_vline(xintercept = mean(dfnf$layer)) +
+  ggtitle("Natural Forests")
+```
+
+The mean, min and max values for natural forests are showed in the value box of the bottom-left part of the app 
+
+![](img/valueBox_nf.png)
+
+### Pine plantation 
+
+```{r}
+rich_pp <- calc(stack(landscape, rasterRich),
+           fun=function(x) ifelse(x[1] == pp_value, x[1]*x[2], NA))
+
+plot(rich_pp, axes=FALSE)
+```
+
+
+```{r}
+dfpp<- drop_na(raster::as.data.frame(rich_pp))
+dfpp %>% 
+  ggplot(aes(layer)) + geom_histogram() +
+  theme_minimal() + 
+  ylab("n pixels") + xlab("Richness Value") + 
+  geom_vline(xintercept = mean(dfpp$layer)) +
+  ggtitle("Pine plantation")
+```
+
+The mean, min and max values for the initial pine plantation are showed in the value box of the bottom-left part of the app 
+
+![](img/valueBox_pp_init.png)
+
 
 # References 
 
