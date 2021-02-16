@@ -12,10 +12,11 @@ source("init_params.R")
 source("aux.R")
 source("diveR_landscape.R")
 source("plot_landscape.R")
-
+source("initRichness.R")
 
 # UI ----------------------------------------------------------------------
 ui <- dashboardPage(
+  skin = "green",
   ## Header ---------------------------------------------------------------
   dashboardHeader(
     title = span(img(src = "diveRpine_v1.svg", heigth = 35), "diveRpine_dev"),
@@ -30,64 +31,71 @@ ui <- dashboardPage(
       class = "dropdown"
     )
   ),
-
-  ## Header ---------------------------------------------------------------
+  ## Sidebar ---------------------------------------------------------------
   dashboardSidebar(disable = TRUE),
 
   ## Body -----------------------------------------------------------------
   dashboardBody(
     fluidRow(
       column(width = 5,
-             fluidRow(
-               box(
-                 tags$p(h4(strong("Pine plantation"))),
-                 sliderInput( # Size of pine plantation
-                   inputId = "pp_size", label = "Patch Area",
-                   min = 200, max = 1500, value = 750),
-                 awesomeRadio(
-                   inputId = "pp_den", label = "Tree density",
-                   choices = c("low", "medium", "high"),
-                   selected = "medium", status = "success", inline = TRUE
-                 ),
-                 awesomeRadio(
-                   inputId = "pp_use", label = "Past Land Use of the Pine plantation",
-                   choices = c("Natural Forests", "Shrublands", "Pasture", "Croplands"),
-                   selected = "Shrublands", status = "success"
-                 ),
-                 # Natural forest configuration
-                 tags$p(h4(strong("Natural Forests"))),
-                 sliderInput(
-                   inputId = "nf_n", label = "Natural forests patch number",
-                   min = 1, max = 5, value = 2),
-                 sliderInput(
-                   inputId = "nf_size", label = "Natural forests patch size (min and max)",
-                   min = 50, max = 500, value = c(100,200)),
-                 tags$br(),
-                 tags$br(),
-
-                 actionBttn(
-                   inputId = "doRiquezaInit",
-                   label = "Compute Initial Richness",
-                   color = "success",
-                   style = "material-flat",
-                   size = "xs"
-                 )
-                 )),
-
-             box(
-               tags$p(h4(strong("Dispersers")))
-             )
-               ),
-      column(width = 7,
-             box(width = NULL,
-                 plotOutput('initial_landscape'))
-             )
-    )
-    )
+        fluidRow(
+          box(
+            tags$p(h4(strong("Pine plantation"))),
+            sliderInput( # Size of pine plantation
+              inputId = "pp_size", label = "Patch Area",
+              min = 200, max = 1500, value = 750
+            ),
+            awesomeRadio(
+              inputId = "pp_den", label = "Tree density",
+              choices = c("low", "medium", "high"),
+              selected = "medium", status = "success", inline = TRUE
+            ),
+            awesomeRadio(
+              inputId = "pp_use", label = "Past Land-use of the pine plantation",
+              choices = c("Natural Forests", "Shrublands", "Pasture", "Croplands"),
+              selected = "Shrublands", status = "success"
+            ),
+            tags$p(h4(strong("Natural Forests"))), # Natural forest configuration
+            sliderInput(
+              inputId = "nf_n", label = "Natural forests patch number",
+              min = 1, max = 5, value = 2
+            ),
+            sliderInput(
+              inputId = "nf_size",
+              label = HTML(paste0("Natural forests patch size", br(), "(min and max)")),
+              min = 50, max = 500, value = c(100, 200)
+            ),
+            tags$br(),
+            tags$br(),
+            actionBttn(
+              inputId = "doRiquezaInit",
+              label = "Compute Initial Richness",
+              color = "success",
+              style = "material-flat",
+              size = "xs"
+            )
+          )
+        ),
+        fluidRow(
+          box(
+            width = 12,
+            tags$p(h4(strong("Richness statistics by pathc"))),
+            infoBoxOutput("rich_ppInitBox"),
+            infoBoxOutput("rich_nfBox")
+            # infoBoxOutput("rich_ppEndBox")
+          )
+        )
+      ),
+      column(
+          width = 7,
+          box(
+            width = NULL,
+            plotOutput("initial_landscape", height = h_plots)
+          )
+        )
+      )
+  )
 )
-
-
-
 
 
 server <- function(input, output, session) {
@@ -95,10 +103,9 @@ server <- function(input, output, session) {
   pp_denR <- reactive({
     list(
       den = switch(input$pp_den,
-                   "low" = "100",
-                   "medium" = "1250",
-                   "high" = "3000"),
-      # "low" = 100, "medium" = 1250, "high" = 3000),
+                   "low" = 100,
+                   "medium" = 1250,
+                   "high" = 3000),
       col = switch(input$pp_den,
                    "low" = "#a1d99b",
                    "medium" = "#238b45",
@@ -172,16 +179,36 @@ server <- function(input, output, session) {
   })
 
   ### ----------------------------------------------
-  ## Compute initial Richnness
+  ## Compute initial Richness
   rasterRich <- reactive({
     initRichness(r = landscape(), draster = dist_raster(),
-                 r_range = ri_range, treedensity = den_pp()$den,
+                 r_range = ri_range, treedensity = pp_denR()$den,
                  pastUse = pastUse(), rescale = FALSE)
   })
 
+
+  ## Richness nf
+  rich_nf <- reactive({
+    summaryRaster(
+      calc(stack(landscape(), rasterRich()),
+           fun=function(x) ifelse(x[1] == nf_value, (x[1]/nf_value)*x[2], NA))
+    )
+    })
+
+
+  ## Compute Richness pine plantations
+  rich_pp <- reactive({
+    summaryRaster(
+      calc(stack(landscape(), rasterRich()),
+           fun=function(x) ifelse(x[1] == pp_value, x[1]*x[2], NA))
+      )
+  })
+
+
+
   ## Get bouondary of pp
   limit_pp <- reactive({
-    rasterToPolygons(landscape, fun=function(x){x==pp_value}, dissolve = TRUE)
+    rasterToPolygons(landscape(), fun=function(x){x==pp_value}, dissolve = TRUE)
   })
 
   ### ----------------------------------------------
@@ -194,10 +221,32 @@ server <- function(input, output, session) {
             "1" = pp_denR()$col,
             "2" = "green",
             "3" = "lightgoldenrod1"),
-        labels = c("Other", "Pine plantation", "Natural Forests", "Shrublands"),
+        labels = c("Other", "Pine plantation", "Natural Forests", "Croplands"),
         name = "Present land uses"
-      )
+      ) +
+      ggtitle("Initial Landscape configuration") +
+      theme(plot.title = element_text(size = 24, face = "bold", hjust= 0.5),
+            legend.text = element_text(size = 16),
+            legend.title = element_text(size = 16))
     })
+
+  output$rich_ppInitBox <- renderValueBox({
+    valueBox(value = rich_pp()$mean,
+             subtitle =
+               HTML(paste0(
+                 paste0(rich_pp()$min, " - ", rich_pp()$max),
+                 br(), tags$strong("Initial Pine plantation"))),
+             icon = icon('tree-conifer', lib='glyphicon'), color = 'green')
+  })
+
+  output$rich_nfBox <- renderValueBox({
+    valueBox(value = rich_nf()$mean,
+             subtitle =
+               HTML(paste0(
+                 paste0(rich_nf()$min, " - ", rich_nf()$max),
+                 br(), tags$strong("Natural Forest"))),
+             icon = icon('tree-deciduous', lib='glyphicon'), color = 'yellow')
+  })
 }
 
 
