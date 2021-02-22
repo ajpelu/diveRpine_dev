@@ -69,6 +69,14 @@ ui <- dashboardPage(
               min = 50, max = 500, value = c(100, 200)
             ),
             tags$br(),
+            actionBttn(
+              inputId = "doPaisaje",
+              label = "Create Landscape",
+              color = "success",
+              style = "material-flat",
+              size = "xs"
+            ),
+            tags$br(),
             tags$br(),
             actionBttn(
               inputId = "doRiquezaInit",
@@ -217,6 +225,8 @@ server <- function(input, output, session) {
   })
 
   ### ----------------------------------------------
+
+  observeEvent(input$doPaisaje, {
   output$initial_landscape <- renderPlot({
 
     plot_landscape(landscape()) +
@@ -236,6 +246,7 @@ server <- function(input, output, session) {
             legend.text = element_text(size = 16),
             legend.title = element_text(size = 16))
     })
+})
 
   output$rich_ppInitBox <- renderValueBox({
     valueBox(value = rich_pp()$mean,
