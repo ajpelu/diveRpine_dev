@@ -14,6 +14,7 @@ source("init_params.R")
 source("aux.R")
 source("diveR_landscape.R")
 source("plot_landscape.R")
+source("plot_richness.R")
 source("dist2nf.R")
 source("initRichness.R")
 
@@ -101,7 +102,8 @@ ui <- dashboardPage(
           width = 7,
           box(
             width = NULL,
-            plotOutput("initial_landscape", height = h_plots)
+            uiOutput('plotMaps')
+            # plotOutput("initial_landscape", height = h_plots)
           )
         )
       )
@@ -215,8 +217,6 @@ server <- function(input, output, session) {
       )
   })
 
-
-
   ## Get bouondary of pp
   limit_pp <- reactive({
     limit_pp <- rasterToPolygons(landscape(), fun=function(x){x==pp_value}, dissolve = TRUE)
@@ -225,28 +225,49 @@ server <- function(input, output, session) {
   })
 
   ### ----------------------------------------------
-
   observeEvent(input$doPaisaje, {
-  output$initial_landscape <- renderPlot({
+    output$plotMaps <- renderUI({
+        plotOutput("initial_landscape", height = h_plots)})
 
-    plot_landscape(landscape()) +
-      scale_fill_manual(
-        values =
-          c("0" = "#FFFFe5",
-            "1" = pp_denR()$col,
-            "2" = "green",
-            "3" = "lightgoldenrod1"),
-        labels = c("Other", "Pine plantation", "Natural Forests", "Croplands"),
-        name = "Present land uses"
-      ) +
-      geom_polygon(data=limit_pp(),
-                   aes(x, y, group=group), fill=NA, colour="black", lwd=.8) +
-      ggtitle("Initial Landscape configuration") +
-      theme(plot.title = element_text(size = 24, face = "bold", hjust= 0.5),
-            legend.text = element_text(size = 16),
-            legend.title = element_text(size = 16))
+    output$initial_landscape <- renderPlot({
+      plot_landscape(landscape()) +
+        scale_fill_manual(
+          values =
+            c("0" = "#FFFFe5",
+              "1" = pp_denR()$col,
+              "2" = "green",
+              "3" = "lightgoldenrod1"),
+          labels = c("Other", "Pine plantation", "Natural Forests", "Croplands"),
+          name = "Present land uses"
+        ) +
+        geom_polygon(data=limit_pp(),
+                     aes(x, y, group=group), fill=NA, colour="black", lwd=.8) +
+        ggtitle("Initial Landscape configuration") +
+        theme(plot.title = element_text(size = 24, face = "bold", hjust= 0.5),
+              legend.text = element_text(size = 16),
+              legend.title = element_text(size = 16))
+      })
+  })
+
+  ### ----------------------------------------------
+
+  observeEvent(input$doRiquezaInit, {
+    output$plotMaps <- renderUI({
+      plotOutput("richness_map", height = h_plots)})
+
+    output$richness_map <- renderPlot({
+      plot_richness(rasterRich()) +
+        geom_polygon(data=limit_pp(),
+                     aes(x, y, group=group), fill=NA, colour="black", lwd=.8) +
+        ggtitle("Initial Richness") +
+        theme(plot.title = element_text(size = 24, face = "bold", hjust= 0.5),
+              legend.text = element_text(size = 16),
+              legend.title = element_text(size = 16)) +
+        labs(fill = " Nº plant species")
     })
-})
+  })
+
+
 
   output$rich_ppInitBox <- renderValueBox({
     valueBox(value = rich_pp()$mean,
