@@ -5,6 +5,8 @@ output:
   html_document:
     df_print: paged
 bibliography: references.bib
+editor_options: 
+  chunk_output_type: console
 ---
 
 # Introduction 
@@ -33,6 +35,8 @@ The app needs some parameters to start. They are provided with `init parameters.
 source("../R/init_params.R")
 source("../R/dist2nf.R")
 source("../R/initRichness.R")
+source("../R/plot_landscape.R")
+source("../R/plot_richness.R")
 ```
 ## Configure Landscape. 
 ### Pine plantation 
@@ -230,7 +234,6 @@ sh <- calc(dist_raster, fun=function(x){1.7605 - 0.0932*(sqrt(sqrt(x)))})
 plot(sh)
 ```
 
-
 ```{r}
 landscape1 <- landscape
 landscape1[landscape1 == 1] <- -100
@@ -383,10 +386,15 @@ rasterRich <- initRichness(r = landscape,
                            treedensity = pp_den_den, 
                            pastUse = pp_use, 
                            rescale = FALSE)
-plot(rasterRich, axes=FALSE)
-
 ```
 
+
+And it can be plotted using `plot_richness()`
+
+
+```{r}
+plot_richness(rasterRich)
+```
 
 # Get values of Richness for NF and Pine
 We used an custom function to compute the mean, min and max. This functions (`summaryRaster`),located in the `init_params.R` file, take a raster and compute the mean, max and min values of the cells. 
