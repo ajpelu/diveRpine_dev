@@ -1,6 +1,9 @@
 library("shiny")
 library("shinydashboard")
 library("shinyWidgets")
+library("raster")
+library("landscapeR")
+library("tidyverse")
 
 library("reactlog")
 reactlog_enable()
@@ -8,10 +11,10 @@ reactlog_enable()
 
 ############################ FUNCTIONS
 source("init_params.R")
-
 source("aux.R")
 source("diveR_landscape.R")
 source("plot_landscape.R")
+source("dist2nf.R")
 source("initRichness.R")
 
 # UI ----------------------------------------------------------------------
@@ -208,7 +211,9 @@ server <- function(input, output, session) {
 
   ## Get bouondary of pp
   limit_pp <- reactive({
-    rasterToPolygons(landscape(), fun=function(x){x==pp_value}, dissolve = TRUE)
+    limit_pp <- rasterToPolygons(landscape(), fun=function(x){x==pp_value}, dissolve = TRUE)
+    fortify(limit_pp, region = "layer") %>%
+              rename(x=long, y=lat)
   })
 
   ### ----------------------------------------------
@@ -224,6 +229,8 @@ server <- function(input, output, session) {
         labels = c("Other", "Pine plantation", "Natural Forests", "Croplands"),
         name = "Present land uses"
       ) +
+      geom_polygon(data=limit_pp(),
+                   aes(x, y, group=group), fill=NA, colour="black", lwd=.8) +
       ggtitle("Initial Landscape configuration") +
       theme(plot.title = element_text(size = 24, face = "bold", hjust= 0.5),
             legend.text = element_text(size = 16),
