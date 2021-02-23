@@ -92,7 +92,11 @@ ui <- dashboardPage(
             sliderInput(inputId = "sb",label = "Small-size Birds",
                         min = 0, max = 100, value = 0, step = 1),
             uiOutput("mb"),
-            dataTableOutput("disptable")
+            dataTableOutput("disptable"),
+            tags$br(),
+            tags$br(),
+            tags$p(h4(strong("Simulation"))),
+            sliderInput(inputId = "timeRange", label = "Simulation years:", min=10, max=50, value=30)
           )
         ),
         fluidRow(
@@ -309,19 +313,16 @@ server <- function(input, output, session) {
   output$disptable <- DT::renderDataTable({
     name_disperser <- c("Small birds", "Medium birds", "Mammals")
     dispersers <- c(
-      as.character(
-        tags$img(src="smallbird.svg", height = '30', widht = '20')),
-      as.character(
-        tags$img(src="garrulus.svg", height = '30', widht = '20')),
-      as.character(
-        tags$img(src="vulpes.svg", height = '30', widht = '20'))
+      as.character(tags$img(src="smallbird.svg", height = '40', width = '40')),
+      as.character(tags$img(src="garrulus.svg", height = '40', width = '40')),
+      as.character(tags$img(src="vulpes.svg", height = '40', width = '40'))
     )
     percentage <- c(input$sb, input$mb, perma())
 
     datatable(cbind(Dispersers = name_disperser,
                     icon = dispersers,
                     Percentage = percentage),
-              colnames = c("Disperser type", "", "%"),
+              colnames = c("Dispersers", "", "%"),
               escape = FALSE,
               options = list(dom = 't'))
   })
