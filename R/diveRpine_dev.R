@@ -23,7 +23,7 @@ ui <- dashboardPage(
   skin = "green",
   ## Header ---------------------------------------------------------------
   dashboardHeader(
-    title = span(img(src = "diveRpine_v1.svg", heigth = 35), "diveRpine_dev"),
+    title = span(img(src = "diveRpine_v1.svg", height = '50'), "diveRpine_dev"),
     tags$li(
       a(
         strong("About diveRpine"),
@@ -86,6 +86,13 @@ ui <- dashboardPage(
               style = "material-flat",
               size = "xs"
             )
+          ),
+          box(
+            tags$p(h4(strong("Dispersers"))),
+            sliderInput(inputId = "sb",label = "Small-size Birds",
+                        min = 0, max = 100, value = 0, step = 1),
+            uiOutput("mb"),
+            dataTableOutput("disptable")
           )
         ),
         fluidRow(
@@ -224,6 +231,11 @@ server <- function(input, output, session) {
               rename(x=long, y=lat)
   })
 
+  ## Disperser mammals
+  perma <- reactive({
+    100-(input$sb + input$mb)
+  })
+
   ### ----------------------------------------------
   observeEvent(input$doPaisaje, {
     output$plotMaps <- renderUI({
@@ -267,8 +279,6 @@ server <- function(input, output, session) {
     })
   })
 
-
-
   output$rich_ppInitBox <- renderValueBox({
     valueBox(value = rich_pp()$mean,
              subtitle =
@@ -285,6 +295,35 @@ server <- function(input, output, session) {
                  paste0(rich_nf()$min, " - ", rich_nf()$max),
                  br(), tags$strong("Natural Forest"))),
              icon = icon('tree-deciduous', lib='glyphicon'), color = 'yellow')
+  })
+
+
+  output$mb <- renderUI({
+    tagList(
+      sliderInput(inputId = "mb",
+                  label = "Medium-size birds",
+                  min = 0, max = 100 - input$sb, value = 0)
+    )
+  })
+
+  output$disptable <- DT::renderDataTable({
+    name_disperser <- c("Small birds", "Medium birds", "Mammals")
+    dispersers <- c(
+      as.character(
+        tags$img(src="smallbird.svg", height = '30', widht = '20')),
+      as.character(
+        tags$img(src="garrulus.svg", height = '30', widht = '20')),
+      as.character(
+        tags$img(src="vulpes.svg", height = '30', widht = '20'))
+    )
+    percentage <- c(input$sb, input$mb, perma())
+
+    datatable(cbind(Dispersers = name_disperser,
+                    icon = dispersers,
+                    Percentage = percentage),
+              colnames = c("Disperser type", "", "%"),
+              escape = FALSE,
+              options = list(dom = 't'))
   })
 }
 
