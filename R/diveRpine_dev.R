@@ -43,6 +43,7 @@ ui <- dashboardPage(
     fluidRow(
       column(width = 5,
         fluidRow(
+          setSliderColor(c(rep("#5DB85C", 6)), c(1:6)), # change color sliders
           box(
             tags$p(h4(strong("Pine plantation"))),
             sliderInput( # Size of pine plantation
@@ -102,7 +103,7 @@ ui <- dashboardPage(
         fluidRow(
           box(
             width = 12,
-            tags$p(h4(strong("Richness statistics by pathc"))),
+            tags$p(h4(strong("Plant richness values by forest type"))),
             infoBoxOutput("rich_ppInitBox"),
             infoBoxOutput("rich_nfBox")
             # infoBoxOutput("rich_ppEndBox")
