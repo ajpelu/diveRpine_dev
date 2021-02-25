@@ -4,9 +4,11 @@ library("shinyWidgets")
 library("raster")
 library("landscapeR")
 library("tidyverse")
+library("DT")
 
 library("reactlog")
 reactlog_enable()
+
 
 
 ############################ FUNCTIONS
@@ -231,10 +233,11 @@ server <- function(input, output, session) {
 
   ## Get bouondary of pp
   limit_pp <- reactive({
-    limit_pp <- rasterToPolygons(landscape(), fun=function(x){x==pp_value}, dissolve = TRUE)
-    fortify(limit_pp, region = "layer") %>%
-              rename(x=long, y=lat)
+    rasterToPolygons(landscape(), fun=function(x){x==pp_value}, dissolve = TRUE)
+    # fortify(limit_pp, region = "layer") %>%
+    #           rename(x=long, y=lat)
   })
+
 
   ## Disperser mammals
   perma <- reactive({
@@ -247,6 +250,9 @@ server <- function(input, output, session) {
         plotOutput("initial_landscape", height = h_plots)})
 
     output$initial_landscape <- renderPlot({
+
+      limites_pp <- fortify(limit_pp(), region = "layer") %>% rename(x=long, y=lat)
+
       plot_landscape(landscape()) +
         scale_fill_manual(
           values =
@@ -257,7 +263,7 @@ server <- function(input, output, session) {
           labels = c("Other", "Pine plantation", "Natural Forests", "Croplands"),
           name = "Present land uses"
         ) +
-        geom_polygon(data=limit_pp(),
+        geom_polygon(data=limites_pp,
                      aes(x, y, group=group), fill=NA, colour="black", lwd=.8) +
         ggtitle("Initial Landscape configuration") +
         theme(plot.title = element_text(size = 24, face = "bold", hjust= 0.5),
