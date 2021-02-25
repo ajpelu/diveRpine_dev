@@ -5,6 +5,8 @@ library("raster")
 library("landscapeR")
 library("tidyverse")
 library("DT")
+library("rasterVis")
+library('RColorBrewer')
 
 library("reactlog")
 reactlog_enable()
@@ -19,6 +21,7 @@ source("plot_landscape.R")
 source("plot_richness.R")
 source("dist2nf.R")
 source("initRichness.R")
+source("disper.R")
 
 # UI ----------------------------------------------------------------------
 ui <- dashboardPage(
@@ -45,7 +48,7 @@ ui <- dashboardPage(
     fluidRow(
       column(width = 5,
         fluidRow(
-          setSliderColor(c(rep("#5DB85C", 6)), c(1:6)), # change color sliders
+          setSliderColor(c(rep("#5DB85C", 7)), c(1:7)), # change color sliders
           box(
             tags$p(h4(strong("Pine plantation"))),
             sliderInput( # Size of pine plantation
@@ -99,7 +102,10 @@ ui <- dashboardPage(
             tags$br(),
             tags$br(),
             tags$p(h4(strong("Simulation"))),
-            sliderInput(inputId = "timeRange", label = "Simulation years:", min=10, max=50, value=30)
+            sliderInput(inputId = "timeRange", label = "Simulation years:", min=10, max=50, value=30),
+
+            actionBttn(inputId = "doPropagulo", label = "Input seed propagules",
+                       color = "success", style = "material-flat", size = "xs")
           )
         ),
         fluidRow(
@@ -233,15 +239,49 @@ server <- function(input, output, session) {
 
   ## Get bouondary of pp
   limit_pp <- reactive({
-    rasterToPolygons(landscape(), fun=function(x){x==pp_value}, dissolve = TRUE)
-    # fortify(limit_pp, region = "layer") %>%
-    #           rename(x=long, y=lat)
+    limit_pp <- rasterToPolygons(landscape(), fun=function(x){x==pp_value}, dissolve = TRUE)
+    fortify(limit_pp, region = "layer") %>%
+      rename(x=long, y=lat)
   })
 
 
   ## Disperser mammals
   perma <- reactive({
     100-(input$sb + input$mb)
+  })
+
+  ## Compute dispersion rasters
+  rasterDisp <- reactive({
+    disper(x = landscape(), xr = rasterRich(), nf_value = nf_value, pp_value = pp_value)
+  })
+
+  ### contribution of each disperser category
+  propagule_sb <- reactive({
+    rasterDisp()[['msb']] * as.numeric(input$sb)
+  })
+
+  propagule_mb <- reactive({
+    rasterDisp()[['mmb']] * as.numeric(input$mb)
+  })
+
+  propagule_ma <- reactive({
+    rasterDisp()[['mma']] * as.numeric(perma())
+  })
+
+  propagule_bird_aux <- reactive({
+    raster::calc(stack(propagule_sb(), propagule_mb()),sum)
+  })
+
+  propagule_bird <- reactive({
+    propagule_bird_aux() * piBird
+  })
+
+  propagule_mammal <- reactive({
+    propagule_ma() * piMammal
+  })
+
+  propagule <- reactive({
+    raster::calc(stack(propagule_bird(), propagule_mammal()), sum)
   })
 
   ### ----------------------------------------------
@@ -251,7 +291,7 @@ server <- function(input, output, session) {
 
     output$initial_landscape <- renderPlot({
 
-      limites_pp <- fortify(limit_pp(), region = "layer") %>% rename(x=long, y=lat)
+      #limites_pp <- fortify(limit_pp(), region = "layer") %>% rename(x=long, y=lat)
 
       plot_landscape(landscape()) +
         scale_fill_manual(
@@ -263,7 +303,7 @@ server <- function(input, output, session) {
           labels = c("Other", "Pine plantation", "Natural Forests", "Croplands"),
           name = "Present land uses"
         ) +
-        geom_polygon(data=limites_pp,
+        geom_polygon(data=limit_pp(),
                      aes(x, y, group=group), fill=NA, colour="black", lwd=.8) +
         ggtitle("Initial Landscape configuration") +
         theme(plot.title = element_text(size = 24, face = "bold", hjust= 0.5),
@@ -289,6 +329,22 @@ server <- function(input, output, session) {
         labs(fill = " Nº plant species")
     })
   })
+
+  ### ----------------------------------------------
+  observeEvent(input$doPropagulo, {
+    output$plotMaps <- renderUI({
+        plotOutput("richness_disper", height = h_plots)
+        })
+
+    output$richness_disper <- renderPlot({
+      levelplot(propagule(),
+                margin=FALSE,  par.settings = propagule_theme,
+                scales=list(draw=FALSE), colorkey = list(space = "bottom"),
+                main = list(expression("Input propagule (n seed" ~ m^-2 ~ year^-1*")"), cex=2.2)
+                )
+    })
+  })
+
 
   output$rich_ppInitBox <- renderValueBox({
     valueBox(value = rich_pp()$mean,
@@ -320,9 +376,9 @@ server <- function(input, output, session) {
   output$disptable <- DT::renderDataTable({
     name_disperser <- c("Small birds", "Medium birds", "Mammals")
     dispersers <- c(
-      as.character(tags$img(src="smallbird.svg", height = '40', width = '40')),
-      as.character(tags$img(src="garrulus.svg", height = '40', width = '40')),
-      as.character(tags$img(src="vulpes.svg", height = '40', width = '40'))
+      as.character(tags$img(src="smallbird.svg", height = '40', width = '50')),
+      as.character(tags$img(src="garrulus.svg", height = '40', width = '50')),
+      as.character(tags$img(src="vulpes.svg", height = '40', width = '50'))
     )
     percentage <- c(input$sb, input$mb, perma())
 
