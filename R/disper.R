@@ -140,15 +140,18 @@ disper <- function(x, xr, nf_value, pp_value) {
 
     # Compute the adjacency of each nf i
     adj <- ( length_inter / perimeter_pine)*100
+    # a = 0.7327; b = -0.0039
+    a <- 0.7330
+    b <- -0.0039
 
-    # Seedlimitation using adjacency (only for bird)
-    seed_limitation_i <- 1/(0.736658946 -0.004037077 * adj)
-    # min and max of inverse seed limitation (adj=0 and adj=100)
-    sl0 <- 1/(0.736658946 -0.004037077 * 0)
-    sl100 <- 1/(0.736658946 -0.004037077 * 100)
-    # standardize inverse seed limitation
-    adjF <- ((seed_limitation_i - sl0) / (sl100 - sl0)) + 0.5
-
+    # Compute the seed limit (only for )
+    seedlimit <- a + b*adj
+    seedentry <- 1 - seedlimit
+    # Standardize seedentry from 0 to 1
+    # 0 % adj --> 1 - (a + b*0%) = 1 - a; 0.267
+    # 100 % adj --> 1 - (a + b*100); 0.657
+    # std --> seedentry - 0% / (100% - 0%)
+    adjF <- (seedentry - 0.267) / (0.657 - 0.267)
 
     # --- Dispersion contribution
     ## Small bird dispersion
