@@ -8,11 +8,6 @@ library("DT")
 library("rasterVis")
 library('RColorBrewer')
 
-library("reactlog")
-reactlog_enable()
-
-
-
 ############################ FUNCTIONS
 source("init_params.R")
 source("aux.R")
@@ -105,7 +100,11 @@ ui <- dashboardPage(
             sliderInput(inputId = "timeRange", label = "Simulation years:", min=10, max=50, value=30),
 
             actionBttn(inputId = "doPropagulo", label = "Input seed propagules",
-                       color = "success", style = "material-flat", size = "xs")
+                       color = "success", style = "material-flat", size = "xs"),
+            tags$br(),
+            tags$br(),
+            actionBttn(inputId = "doRiquezaEnd", label = "Compute Final Richness",
+              color = "success", style = "material-flat", size = "xs")
           )
         ),
         fluidRow(
@@ -113,8 +112,8 @@ ui <- dashboardPage(
             width = 12,
             tags$p(h4(strong("Plant richness values by forest type"))),
             infoBoxOutput("rich_ppInitBox"),
-            infoBoxOutput("rich_nfBox")
-            # infoBoxOutput("rich_ppEndBox")
+            infoBoxOutput("rich_nfBox"),
+            infoBoxOutput("rich_ppEndBox")
           )
         )
       ),
@@ -219,23 +218,29 @@ server <- function(input, output, session) {
                  pastUse = pastUse(), rescale = FALSE)
   })
 
-
-  ## Richness nf
+  ## Richness of Natural forests
   rich_nf <- reactive({
-    summaryRaster(
-      calc(stack(landscape(), rasterRich()),
+      raster::calc(stack(landscape(), rasterRich()),
            fun=function(x) ifelse(x[1] == nf_value, (x[1]/nf_value)*x[2], NA))
-    )
     })
 
-
-  ## Compute Richness pine plantations
-  rich_pp <- reactive({
-    summaryRaster(
-      calc(stack(landscape(), rasterRich()),
-           fun=function(x) ifelse(x[1] == pp_value, x[1]*x[2], NA))
-      )
+  ### Stats for nf richness
+  rich_nfStats <- reactive({
+    summaryRaster(rich_nf())
   })
+
+
+  ## Initial Richness of Pine plantations
+  rich_pp  <- reactive({
+      raster::calc(stack(landscape(), rasterRich()),
+           fun=function(x) ifelse(x[1] == pp_value, x[1]*x[2], NA))
+  })
+
+  ### Stats for pp (init) richness
+  rich_ppStats <- reactive({
+    summaryRaster(rich_pp())
+  })
+
 
   ## Get bouondary of pp
   limit_pp <- reactive({
@@ -243,7 +248,6 @@ server <- function(input, output, session) {
     fortify(limit_pp, region = "layer") %>%
       rename(x=long, y=lat)
   })
-
 
   ## Disperser mammals
   perma <- reactive({
@@ -283,6 +287,30 @@ server <- function(input, output, session) {
   propagule <- reactive({
     raster::calc(stack(propagule_bird(), propagule_mammal()), sum)
   })
+
+
+  ## Richness End
+  rich_end <- reactive({
+
+    propagulo_time <- rich_pp() + propagule()*input$timeRange
+
+    rich_time <- raster::calc(stack(landscape(),
+                            rasterRich(),
+                            propagulo_time),
+                      fun = function(x) ifelse(x[1] == pp_value, x[1]*x[3], x[2]))
+    rich_time[rich_time== 0] <- NA
+
+    list(
+      rich_pp_end = propagulo_time,
+      rich_time = rich_time)
+  })
+
+
+  ## Compute End Richness pine plantations stats
+  rich_ppStats_end <- reactive({
+    summaryRaster(rich_end()$rich_pp_end)
+  })
+
 
   ### ----------------------------------------------
   observeEvent(input$doPaisaje, {
@@ -345,25 +373,32 @@ server <- function(input, output, session) {
     })
   })
 
-
   output$rich_ppInitBox <- renderValueBox({
-    valueBox(value = rich_pp()$mean,
+    valueBox(value = rich_ppStats()$mean,
              subtitle =
                HTML(paste0(
-                 paste0(rich_pp()$min, " - ", rich_pp()$max),
+                 paste0(rich_ppStats()$min, " - ", rich_ppStats()$max),
                  br(), tags$strong("Initial Pine plantation"))),
              icon = icon('tree-conifer', lib='glyphicon'), color = 'green')
   })
 
   output$rich_nfBox <- renderValueBox({
-    valueBox(value = rich_nf()$mean,
+    valueBox(value = rich_nfStats()$mean,
              subtitle =
                HTML(paste0(
-                 paste0(rich_nf()$min, " - ", rich_nf()$max),
+                 paste0(rich_nfStats()$min, " - ", rich_nfStats()$max),
                  br(), tags$strong("Natural Forest"))),
              icon = icon('tree-deciduous', lib='glyphicon'), color = 'yellow')
   })
 
+  output$rich_ppEndBox <- renderValueBox({
+    valueBox(value = rich_ppStats_end()$mean,
+             subtitle =
+               HTML(paste0(
+                 paste0(rich_ppStats_end()$min, " - ", rich_ppStats_end()$max),
+                 br(), tags$strong("Final Pine plantation"))),
+             icon = icon('tree-conifer', lib='glyphicon'), color = 'green')
+  })
 
   output$mb <- renderUI({
     tagList(
