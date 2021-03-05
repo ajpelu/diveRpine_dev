@@ -64,8 +64,3 @@ summaryRaster <- function(x) {
 # Input year/m2 (see package references)
 piBird = (3.7)/50
 piMammal = (0.2)/50
-
-# Themes for raster
-propagule_theme <- rasterTheme(region = brewer.pal(9, "YlOrBr"),
-                               axis.line = list(col = "transparent"),
-                               layout.heights = list(xlab.key.padding= 12))
