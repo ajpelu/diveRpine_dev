@@ -7,6 +7,7 @@ library("tidyverse")
 library("DT")
 library("rasterVis")
 library('RColorBrewer')
+library('sf')
 
 ############################ FUNCTIONS
 source("init_params.R")
@@ -17,6 +18,10 @@ source("plot_richness.R")
 source("dist2nf.R")
 source("initRichness.R")
 source("disper.R")
+
+source("potential_dispersion.R")
+source("input_propagule.R")
+source("plot_propagule.R")
 
 # UI ----------------------------------------------------------------------
 ui <- dashboardPage(
@@ -255,37 +260,25 @@ server <- function(input, output, session) {
   })
 
   ## Compute dispersion rasters
-  rasterDisp <- reactive({
-    disper(x = landscape(), xr = rasterRich(), nf_value = nf_value, pp_value = pp_value)
+  pot_disp <- reactive({
+    potd <- potential_dispersion(x = landscape(), rich_nf = rich_nf(),
+                         nf_value = nf_value, pp_value = pp_value)
   })
 
-  ### contribution of each disperser category
-  propagule_sb <- reactive({
-    rasterDisp()[['msb']] * as.numeric(input$sb)
+  pot_disp_pp <- reactive({
+    input_propagule(x = landscape(), pd = pot_disp(), pp_value = pp_value)
   })
 
-  propagule_mb <- reactive({
-    rasterDisp()[['mmb']] * as.numeric(input$mb)
-  })
 
-  propagule_ma <- reactive({
-    rasterDisp()[['mma']] * as.numeric(perma())
-  })
-
-  propagule_bird_aux <- reactive({
-    raster::calc(stack(propagule_sb(), propagule_mb()),sum)
-  })
-
-  propagule_bird <- reactive({
-    propagule_bird_aux() * piBird
-  })
-
-  propagule_mammal <- reactive({
-    propagule_ma() * piMammal
-  })
-
+  ### contribution of each dispersers
   propagule <- reactive({
-    raster::calc(stack(propagule_bird(), propagule_mammal()), sum)
+    propagule_sb <- pot_disp_pp()[['sb']] * as.numeric(input$sb) * piBird
+    propagule_mb <- pot_disp_pp()[['mb']] * as.numeric(input$mb) * piBird
+    propagule_ma <- pot_disp_pp()[['ma']] * as.numeric(perma()) * piMammal
+
+    raster::calc(stack(propagule_sb,
+                       propagule_mb,
+                       propagule_ma), sum)
   })
 
 
@@ -361,15 +354,13 @@ server <- function(input, output, session) {
   ### ----------------------------------------------
   observeEvent(input$doPropagulo, {
     output$plotMaps <- renderUI({
-        plotOutput("richness_disper", height = h_plots)
+        plotOutput("seed_input", height = h_plots)
         })
-
-    output$richness_disper <- renderPlot({
-      levelplot(propagule(),
-                margin=FALSE,  par.settings = propagule_theme,
-                scales=list(draw=FALSE), colorkey = list(space = "bottom"),
-                main = list(expression("Input propagule (n seed" ~ m^-2 ~ year^-1*")"), cex=2.2)
-                )
+    output$seed_input <- renderPlot({
+      plot_propagule(propagule()) +
+        ggtitle(
+          expression("Input propagule (n seed" ~ m^-2 ~ year^-1*")")) +
+        theme(plot.title = element_text(size = 24, face = "bold", hjust= 0.5))
     })
   })
 
