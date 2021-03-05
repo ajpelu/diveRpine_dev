@@ -4,7 +4,7 @@ library(raster)
 library(landscapeR)
 
 # Set heigth plots (for dashboard)
-h_plots <- 800
+h_plots <- 700
 
 ## -------------------------------------------------
 ### Create empty landscape
