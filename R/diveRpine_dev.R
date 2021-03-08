@@ -122,13 +122,16 @@ ui <- dashboardPage(
           )
         )
       ),
-      column(
-          width = 7,
-          box(
-            width = NULL,
-            uiOutput('plotMaps')
-            # plotOutput("initial_landscape", height = h_plots)
-          )
+      column(width = 7,
+             fluidRow(
+               box(width = NULL,
+               uiOutput('plotMaps')
+             ))
+             # fluidRow(
+             #   box(width = NULL,
+             #       tags$p(h4(strong("Evolution"))),
+             #       plotlyOutput("plot_evolution", height="200px"))
+             # )
         )
       )
   )
@@ -281,27 +284,21 @@ server <- function(input, output, session) {
                        propagule_ma), sum)
   })
 
-
   ## Richness End
-  rich_end <- reactive({
-
-    propagulo_time <- rich_pp() + propagule()*input$timeRange
-
-    rich_time <- raster::calc(stack(landscape(),
-                            rasterRich(),
-                            propagulo_time),
-                      fun = function(x) ifelse(x[1] == pp_value, x[1]*x[3], x[2]))
-    rich_time[rich_time== 0] <- NA
-
-    list(
-      rich_pp_end = propagulo_time,
-      rich_time = rich_time)
+  rich_pp_end <- reactive({
+    rich_pp() + propagule()*input$timeRange
   })
 
 
+  rich_end <- reactive({
+    raster::calc(stack(landscape(), rasterRich(), rich_pp_end()),
+                      fun = function(x) ifelse(x[1] == pp_value, x[1]*x[3], x[2]))
+    # rich_all_end[rich_all_end== 0] <- NA
+  })
+
   ## Compute End Richness pine plantations stats
   rich_ppStats_end <- reactive({
-    summaryRaster(rich_end()$rich_pp_end)
+    summaryRaster(rich_pp_end())
   })
 
 
@@ -360,12 +357,34 @@ server <- function(input, output, session) {
       plot_propagule(propagule()) +
         ggtitle(
           expression("Input propagule (n seed" ~ m^-2 ~ year^-1*")")) +
-        theme(plot.title = element_text(size = 24, face = "bold", hjust= 0.5))
+        theme(plot.title = element_text(size = 24, face = "bold", hjust= 0.5),
+              legend.text = element_text(size = 16))
+    })
+  })
+
+  ### ----------------------------------------------
+
+  observeEvent(input$doRiquezaEnd, {
+    output$plotMaps <- renderUI({
+      plotOutput("richness_map_end", height = h_plots)})
+
+    output$richness_map_end <- renderPlot({
+      plot_richness(rich_end()) +
+        geom_polygon(data=limit_pp(),
+                     aes(x, y, group=group), fill=NA, colour="black", lwd=.8) +
+        ggtitle("End Richness") +
+        theme(plot.title = element_text(size = 24, face = "bold", hjust= 0.5),
+              legend.text = element_text(size = 16),
+              legend.title = element_text(size = 16)) +
+        labs(fill = " Nº plant species")
     })
   })
 
   output$rich_ppInitBox <- renderValueBox({
-    valueBox(value = rich_ppStats()$mean,
+    valueBox(value =
+               tags$p(HTML(paste0(
+                 paste0(rich_ppStats()$mean, " &plusmn ", rich_ppStats()$sd))),
+                 style = "font-size: 70%;"),
              subtitle =
                HTML(paste0(
                  paste0(rich_ppStats()$min, " - ", rich_ppStats()$max),
@@ -374,7 +393,10 @@ server <- function(input, output, session) {
   })
 
   output$rich_nfBox <- renderValueBox({
-    valueBox(value = rich_nfStats()$mean,
+    valueBox(value =
+               tags$p(HTML(paste0(
+                 paste0(rich_nfStats()$mean, " &plusmn ", rich_nfStats()$sd))),
+                 style = "font-size: 70%;"),
              subtitle =
                HTML(paste0(
                  paste0(rich_nfStats()$min, " - ", rich_nfStats()$max),
@@ -383,7 +405,10 @@ server <- function(input, output, session) {
   })
 
   output$rich_ppEndBox <- renderValueBox({
-    valueBox(value = rich_ppStats_end()$mean,
+    valueBox(value =
+               tags$p(HTML(paste0(
+                 paste0(rich_ppStats_end()$mean, " &plusmn ", rich_ppStats_end()$sd))),
+                 style = "font-size: 70%;"),
              subtitle =
                HTML(paste0(
                  paste0(rich_ppStats_end()$min, " - ", rich_ppStats_end()$max),
@@ -415,7 +440,13 @@ server <- function(input, output, session) {
               escape = FALSE,
               options = list(dom = 't'))
   })
-}
 
+
+
+
+
+
+
+}
 
 shinyApp(ui, server)
