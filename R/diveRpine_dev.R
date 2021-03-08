@@ -127,11 +127,6 @@ ui <- dashboardPage(
                box(width = NULL,
                uiOutput('plotMaps')
              ))
-             # fluidRow(
-             #   box(width = NULL,
-             #       tags$p(h4(strong("Evolution"))),
-             #       plotlyOutput("plot_evolution", height="200px"))
-             # )
         )
       )
   )
@@ -440,12 +435,6 @@ server <- function(input, output, session) {
               escape = FALSE,
               options = list(dom = 't'))
   })
-
-
-
-
-
-
 
 }
 
