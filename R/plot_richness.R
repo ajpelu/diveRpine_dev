@@ -1,17 +1,19 @@
 #' plot_richness
 #'
-#' Plot the richness
+#' Plot the richness values for the landscape created by the user
 #'
-#' @param x Raster* object
-#'
-#' This function is inspired by the show_landscape function within
-#' landscapetools pkg (\url{https://github.com/ropensci/landscapetools}).
+#' @param x A \code{raster} object
 #'
 #' @return ggplot2 Object
 #'
+#' @import ggplot2
+#' @import raster
+#' @importFrom Rdpack reprompt
+#' @author Antonio J Pérez-Luque (\email{ajpelu@@gmail.com})
+#'
 #' @export
 plot_richness <- function(x,
-                           ...){
+                          ...){
   # derive ratio for plot, cells should be a square and axis equal in length
   if (raster::ncol(x) == raster::nrow(x)) {
     ratio <- 1
@@ -41,8 +43,8 @@ plot_richness <- function(x,
       plot.margin = ggplot2::margin(0, 0, 0, 0, "cm")
     ) +
     ggplot2::scale_fill_distiller(palette = "YlGn",
-                         type = "seq", direction = 1, na.value = "transparent",
-                         breaks = breaks) +
+                                  type = "seq", direction = 1, na.value = "transparent",
+                                  breaks = breaks) +
     ggplot2::scale_x_continuous(expand = c(0, 0)) +
     ggplot2::scale_y_continuous(expand = c(0, 0))
 }
