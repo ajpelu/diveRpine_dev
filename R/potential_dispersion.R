@@ -1,3 +1,79 @@
+#' Compute the potential dispersion
+#'
+#' Compute the propagule input from each patch to focal pine plantation using
+#' three classes of disperses and different kernels equations.
+#'
+#' @param x A \code{raster} object with the landscape configured
+#'
+#' @param rich_nf A \code{raster} object with richness of the natural forests
+#'
+#' @param nf_value The value of "Natural Forests" class within the raster
+#' (default value = 2)
+#'
+#' @param pp_value The value of "pine plantation" class within the raster
+#' (default value = 1)
+#'
+#' @return \code{raster} objects with values of potential dispersion for each
+#' type of disperser
+#' @details
+#'
+#' It computes the propagule input from each patch to focal pine plantation
+#' using three classes of disperses and different kernels.
+#' \itemize{The quantity and quality of seed dispersion are influenced by:
+#'   \item Seed sources: seed diversity in seed source patch, and patch size
+#'   \item Disperses: percentage of each disperser
+#'   \item Landscape configuration
+#'}
+#' \itemize{Three classes of disperses were considered:
+#'   \item small birds, \emph{e.g.} European robin (\emph{Erithacus rubecula}),
+#'   Sardinian warbler (\emph{Sylvia melanocephala})
+#'   \item medium birds, \emph{e.g.} Eurasian jay (\emph{Garrulus glandarius})
+#'   \item mammals, \emph{e.g.} Red fox (\emph{Vulpes vulpes})
+#'}
+#'
+#' \itemize{For each type of disperser, different dispersion kernels have been
+#' considered.
+#'   \item Small-sized birds rarely exceed 100 m in distance, and approximately
+#'   50\% of the seeds are dispersed in the first 50 m.
+#'   \item Medium-sized birds disperse 50\% of the seeds over a distance of more
+#'   than 100 m. The Eurasyan jay shows a dispersion range between 5 and
+#'   1000 m for Sierra Nevada mountains (SE Spain). The distance at which
+#'   the maximum dispersion occurs depends on the target patch, being
+#'   approximately 400 me when the target patch is a pine plantation.
+#'   \item Mammals disperse in a range from 0 to more than 1500 m, with
+#'   the dispersion peak at 650 - 700 m. More than 50\% of the seeds
+#'   dispersed by mammals are deposited at distances greater than 495 m.
+#' }
+#'
+#' This functions also considers the adjacency between each of the
+#' natural forest patches and the focal pine plantation. It is known that the
+#' higher the adjacency between the natural forest and the pine plantation, the
+#' lower the limitation of the propagule entry dispersed by birds (Zamora et
+#' al.2010). Then for each natural forest patch, the adjacency to pine-plantation
+#' is computed. For those patches with adjacency, the potential dispersion by
+#' birds increases according a factor (see Zamora et al. 2010).
+#'
+#' @references
+#' \insertRef{Gomez2003}{diveRpine}
+#'
+#' \insertRef{GonzalezVaro2013}{diveRpine}
+#'
+#' \insertRef{Jordano2007}{diveRpine}
+#'
+#' \insertRef{Matias2010}{diveRpine}
+#'
+#' \insertRef{Pons2007}{diveRpine}
+#'
+#' \insertRef{Zamora2010}{diveRpine}
+#'
+#' @import raster
+#' @import rgeos
+#' @import sp
+#' @import sf
+#' @importFrom stats dlnorm dweibull
+#' @importFrom methods as
+#' @importFrom Rdpack reprompt
+#' @author Antonio J Pérez-Luque (\email{ajpelu@@gmail.com})
 potential_dispersion <- function(x, nf_value, pp_value, rich_nf) {
 
   # Output stacks
@@ -45,7 +121,7 @@ potential_dispersion <- function(x, nf_value, pp_value, rich_nf) {
     # 100 % adj --> 1 - (a + b*100); 0.657
     # std --> seedentry - 0% / (100% - 0%)
     adjF <- (seedentry - 0.267) / (0.657 - 0.267)
-    fc <- 1+adjF
+    fc <- 1+0.5*adjF
 
     # --- Richness stats (mean, se, sd ) for each nf patch
     rich_nfi <- raster::mask(rich_nf, nf_patches[i,])
@@ -102,11 +178,11 @@ potential_dispersion <- function(x, nf_value, pp_value, rich_nf) {
   ma_all.sd <- sum(raster::subset(mapot, grep("^mapot.+_sd$", names(mapot), value = T)))
   names(ma_all.sd) <- "ma.sd"
 
-  sb_all.se <- sum(raster::subset(sbpot, grep("^sbpot.+_sd$", names(sbpot), value = T)))
+  sb_all.se <- sum(raster::subset(sbpot, grep("^sbpot.+_se$", names(sbpot), value = T)))
   names(sb_all.se) <- "sb.se"
-  mb_all.se <- sum(raster::subset(mbpot, grep("^mbpot.+_sd$", names(mbpot), value = T)))
+  mb_all.se <- sum(raster::subset(mbpot, grep("^mbpot.+_se$", names(mbpot), value = T)))
   names(mb_all.se) <- "mb.se"
-  ma_all.se <- sum(raster::subset(mapot, grep("^mapot.+_sd$", names(mapot), value = T)))
+  ma_all.se <- sum(raster::subset(mapot, grep("^mapot.+_se$", names(mapot), value = T)))
   names(ma_all.se) <- "ma.se"
 
   out <- stack(sb, mb, ma,
