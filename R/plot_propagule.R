@@ -1,3 +1,17 @@
+#' plot_propagule
+#'
+#' Plot the input propagules into the focal pine plantation
+#'
+#' @param x A \code{raster} object
+#'
+#' @return ggplot2 Object
+#'
+#' @import ggplot2
+#' @import raster
+#' @importFrom Rdpack reprompt
+#' @author Antonio J Pérez-Luque (\email{ajpelu@@gmail.com})
+#'
+#' @export
 plot_propagule <- function(x,
                           ...){
   # derive ratio for plot, cells should be a square and axis equal in length
