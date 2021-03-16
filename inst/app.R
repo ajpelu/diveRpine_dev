@@ -1,2 +1,2 @@
 library("shiny")
-runApp("./inst/app/", launch.browser = TRUE)
+runApp("./inst", launch.browser = TRUE)
